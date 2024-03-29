@@ -16,10 +16,11 @@ int main(int argc, const char* argv[]) {
     try {
         // Deserialize the ScriptModule
         module = torch::jit::load(argv[1] /*, at::kCUDA*/);
-        module.to(at::kCUDA);
+        //module.to(at::kCUDA);
+        //module.to(at::kCPU);
     } 
     catch (const c10::Error& e) {
-        std::cerr << "error loading the model\n";
+        std::cerr << "error loading the model: " << e.msg() << "\n";
         return -1;
     }
 
