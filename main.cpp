@@ -1,8 +1,12 @@
 #include <torch/script.h>
+#include <torch/torch.h>
 #include <opencv2/opencv.hpp>
 
 #include <iostream>
 #include <memory>
+
+static const int WIDTH = 128;
+static const int HEIGHT = 128;
 
 int main(int argc, const char* argv[]) {
     std::cout << "insight 0.1\n\n";
@@ -17,7 +21,6 @@ int main(int argc, const char* argv[]) {
         // Deserialize the ScriptModule
         module = torch::jit::load(argv[1] /*, at::kCUDA*/);
         //module.to(at::kCUDA);
-        //module.to(at::kCPU);
     } 
     catch (const c10::Error& e) {
         std::cerr << "error loading the model: " << e.msg() << "\n";
@@ -25,54 +28,68 @@ int main(int argc, const char* argv[]) {
     }
 
     // get an input image
-    cv::Mat image = cv::imread("/home/james/insight/img3.jpg", cv::IMREAD_COLOR);
+    cv::Mat image = cv::imread(argv[2], cv::IMREAD_COLOR);
     if (image.empty()) {
-        std::cerr << "img3.jpg not found\n";
+        std::cerr << argv[2] << " not found\n";
         return -1;
     }
     cv::imshow("Input Image", image);
     cv::waitKey(0);
 
-    cv::Mat image2;
-    cv::cvtColor(image, image2, cv::COLOR_BGR2RGB);
+    // apply color transformation
+    cv::Size orig_size = image.size();
+    cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
 
-    cv::imshow("Image2", image2);
-    cv::waitKey(0);
-
-    std::cout << "rows: " << image2.rows << " cols: " << image2.cols << " channels: " << image2.channels() << "\n";
-    //std::cout << "image data: " << image2.row(128) << "\n";
-
-    // TODO: transform to 128 x 128, center cropped
-    // resize 128 x 128
-    cv::Mat resized_image;
-    cv::resize(image2, resized_image, cv::Size(128, 128));
-    std::cout << "rows: " << resized_image.rows << " cols: " << resized_image.cols << " channels: " << 
-        resized_image.channels() << "\n";
-    //std::cout << "resized image data: " << resized_image.row(0) << "\n";
+    // resize
+    cv::resize(image, image, cv::Size(WIDTH, HEIGHT));
 
     // convert to tensor
     auto tensor_image = torch::from_blob(
-        image2.data, { image2.rows, image2.cols, image2.channels() }, at::kByte).permute({2, 0, 1});
-    
-    // auto tensor_image = torch::from_blob(
-    //     resized_image.data, { resized_image.rows, resized_image.cols, resized_image.channels() })
-    //     .permute({2, 0, 1})
-    //     .to(torch::kCUDA);
-    
+        image.data, 
+        { image.rows, image.cols, image.channels() }, 
+        at::kByte);
+    tensor_image = tensor_image.permute({ 2,0,1 });
+    std::cout << "tensor_image sizes: " << tensor_image.sizes() << "\n";
 
-    std::cout << "dim 0: " << tensor_image.sizes()[0] << "\n";
-    std::cout << "dim 1: " << tensor_image.sizes()[1] << "\n";
-    std::cout << "dim 2: " << tensor_image.sizes()[2] << "\n";
-    std::cout << tensor_image.slice(0, 0, 0) << "\n";
+    // convert to float and scale to range [0.0, 1.0]
+    tensor_image = tensor_image.to(torch::kFloat);
+    tensor_image = tensor_image.div(255.0);
 
     // create a vector of inputs
-    // std::vector<torch::jit::IValue> inputs;
-    // inputs.push_back(tensor_image.unsqueeze(0));
-    //inputs.push_back(torch::ones({1, 3, 128, 128}, torch::kCUDA));
+    tensor_image.unsqueeze_(0);
+    std::vector<torch::jit::IValue> inputs;
+    inputs.push_back(tensor_image.to(torch::kFloat));
 
-    // // execute the model and turn its output into a tensor
-//    at::Tensor output = module.forward(inputs).toTensor();
-    //std::cout << output.slice(/*dim=*/1, /*start=*/0, /*end=*/5) << '\n';
+    // execute the model
+    auto model_output = module.forward(inputs).toTensor();
+    auto pred = model_output.argmax(1).squeeze(0);
+    std::cout << "pred sizes: " << pred.sizes() << "\n";
+
+    // overlay segmentation
+    auto tensor_image_out = tensor_image.squeeze(0);
+    std::cout << "tensor_image_out sizes: " << tensor_image_out.sizes() << "\n";
+    for (int r=0;r<tensor_image_out.sizes()[1];r++) {
+        for (int c=0;c<tensor_image_out.sizes()[2];c++) {
+            //float alpha = 1.0 - pred[r][c].item<float>();
+            if (pred[r][c].item<float>() == 1.0) {
+                tensor_image_out[0][r][c] *= 0.75;
+                tensor_image_out[1][r][c] *= 0.75;
+                tensor_image_out[2][r][c] *= 0.75;
+            }
+        }
+    }
+    
+    // convert to image
+    tensor_image_out = tensor_image_out.mul(255.0);
+    tensor_image_out = tensor_image_out.to(torch::kU8);
+    tensor_image_out = tensor_image_out.permute({1,2,0});
+    cv::Mat image_out = cv::Mat(tensor_image_out.size(1), tensor_image_out.size(0), CV_8UC3, tensor_image_out.data_ptr());
+    cv::cvtColor(image_out, image_out, cv::COLOR_RGB2BGR); // OpenCV uses BGR order
+    cv::resize(image_out, image_out, orig_size);
+    cv::imshow("Output Image", image_out);
+    cv::waitKey(0);
+
 
     return 0;
 }
+
