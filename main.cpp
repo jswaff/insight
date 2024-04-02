@@ -70,11 +70,11 @@ int main(int argc, const char* argv[]) {
     std::cout << "tensor_image_out sizes: " << tensor_image_out.sizes() << "\n";
     for (int r=0;r<tensor_image_out.sizes()[1];r++) {
         for (int c=0;c<tensor_image_out.sizes()[2];c++) {
-            //float alpha = 1.0 - pred[r][c].item<float>();
-            if (pred[r][c].item<float>() == 1.0) {
-                tensor_image_out[0][r][c] *= 0.75;
-                tensor_image_out[1][r][c] *= 0.75;
-                tensor_image_out[2][r][c] *= 0.75;
+            if (pred[r][c].item<float>() > 0) {
+                float alpha = 0.75;
+                tensor_image_out[0][r][c] *= alpha;
+                tensor_image_out[1][r][c] *= alpha;
+                tensor_image_out[2][r][c] *= alpha;
             }
         }
     }
