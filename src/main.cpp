@@ -1,9 +1,12 @@
+//#include <torch/extension.h>
 #include <torch/script.h>
 #include <torch/torch.h>
 #include <opencv2/opencv.hpp>
 
 #include <iostream>
 #include <memory>
+
+#include "matrix.h"
 
 static const int WIDTH = 128;
 static const int HEIGHT = 128;
@@ -89,7 +92,16 @@ int main(int argc, const char* argv[]) {
     cv::imshow("Output Image", image_out);
     cv::waitKey(0);
 
+    // just a test
+    float input_arr[16] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
+    auto conv_input = torch::from_blob(input_arr, { 1,1,4,4 }); // batch size, in channels, height, width
+    std::cout << "conv_input: " << conv_input << "\n";
+
+    auto kernel = at::ones({1,1,3,3}); // out channels, in channels, kernel height, kernel width
+    std::cout << "kernel: " << kernel << "\n";
+
+    auto conv = conv2(conv_input, kernel);
+    std::cout << "conv out: " << conv << "\n";
 
     return 0;
 }
-
