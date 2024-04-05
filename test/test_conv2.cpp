@@ -32,7 +32,7 @@ TEST(matrix_test, conv2)
     ASSERT_TRUE(float_array_equals(conv.data_ptr<float>(), expected, 16));
 }
 
-TEST(matrix_text, conv2_2)
+TEST(matrix_test, conv2_2)
 {
     float input_arr[16] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
     auto conv_input = torch::from_blob(input_arr, { 1,1,4,4 });
@@ -74,7 +74,7 @@ TEST(matrix_test, conv2_3)
     ASSERT_TRUE(float_array_equals(conv.data_ptr<float>(), expected, 16));
 }
 
-TEST(matrx_test, conv2_4_correlation)
+TEST(matrix_test, conv2_4_correlation)
 {
     float input_arr[16] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
     auto conv_input = torch::from_blob(input_arr, { 1,1,4,4 });
@@ -151,8 +151,6 @@ TEST(matrix_test, conv2_valid_3)
 	float expected[6] = {  70,  84,  98,
                           126, 140, 154 };
 
-    std::cout << "sizes: " << conv.sizes() << "\n";
-    std::cout << conv << "\n";
     ASSERT_EQ(conv.sizes()[2], 2);
     ASSERT_EQ(conv.sizes()[3], 3);
     ASSERT_TRUE(float_array_equals(conv.data_ptr<float>(), expected, 6));
