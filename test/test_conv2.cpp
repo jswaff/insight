@@ -2,7 +2,7 @@
 #include <torch/torch.h>
 #include <gtest/gtest.h>
 
-#include "../src/matrix.h"
+#include "../src/matrix/matrix.h"
 
 static bool float_array_equals(float* arr1, float* arr2, int len) {
 	for (int i=0;i<len;i++) {
