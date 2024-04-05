@@ -1,4 +1,6 @@
 #include <ATen/ATen.h>
 
-at::Tensor conv2(at::Tensor &in, at::Tensor &kernel);
+enum ConvType { VALID, SAME };
+
+at::Tensor conv2(at::Tensor &in, at::Tensor &kernel, ConvType conv_type, bool do_conv);
 
