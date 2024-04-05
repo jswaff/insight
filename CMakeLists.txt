@@ -40,7 +40,7 @@ set_property(TARGET insight PROPERTY CXX_STANDARD 17)
 
 # build test executable
 file(GLOB_RECURSE test_sources CONFIGURE_DEPENDS "test/*.cpp")
-add_executable(insight_test src/conv2.cpp ${test_sources})
+add_executable(insight_test src/conv2.cpp src/conv3.cpp ${test_sources})
 target_compile_features(insight_test PUBLIC cxx_range_for)
 target_link_libraries(insight_test ${OpenCV_LIBS})
 target_link_libraries(insight_test ${PYTHON_INCLUDE_DIRS})

@@ -4,7 +4,7 @@
 
 #include "../src/matrix.h"
 
-bool float_array_equals(float* arr1, float* arr2, int len) {
+static bool float_array_equals(float* arr1, float* arr2, int len) {
 	for (int i=0;i<len;i++) {
 		float v1 = arr1[i];
 		float v2 = arr2[i];
